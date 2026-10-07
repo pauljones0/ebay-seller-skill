@@ -1,6 +1,6 @@
 ---
 name: fbm_seller
-description: Sell items on Facebook Marketplace with minimal effort. Use when the user wants to list physical items for sale on Facebook Marketplace (FBM) — photos in, the agent handles identification (asking the owner only what's missing), active-listing comp pricing, listing drafting, and publishing via facebook-cli, with per-item tracking in a beads repo. Supports local-pickup/meetup sales; never messages buyers without explicit say-so.
+description: Sell items on Facebook Marketplace with minimal effort. Use when the user wants to list physical items for sale on Facebook Marketplace (FBM) — photos in, the agent handles identification (asking the owner only what's missing), active-listing comp pricing, listing drafting, and publishing via facebook-cli, with per-item tracking in a private repo. Supports local-pickup/meetup sales; never messages buyers without explicit say-so.
 ---
 
 # FBM Seller
@@ -20,13 +20,19 @@ sold, and hand the owner only the decisions that need a human.
   the owner's explicit say-so on the exact message, or retry a failed
   Marketplace write without surfacing the error first.
 
+## Tracking
+
+No issue tracker — per-item files in the private tracking repo:
+
+- `items/<item-id>/status.txt` — one word, the current stage:
+  `intake → identified → comps_done → decided → drafted → listed → sold → complete`
+- `items/<item-id>/log.md` — append-only dated log of every decision and
+  change. Never act silently; if it isn't in the log, it didn't happen.
+
 ## Setup (first run)
 
 1. **Tracking repo.** Reuse the shared selling repo (scaffolded by
-   ebay-seller): `~/workspace/sell-my-stuff`, or run
-   `assets/repo-scaffold.sh <path>` for a fresh one. Every item gets one
-   `beads` issue, labeled `channel:fbm`, moving through the stages below.
-   Save the repo path in memory.
+   ebay-seller): `~/workspace/sell-my-stuff`. Save the repo path in memory.
 2. **Check Facebook is connected:** `facebook-cli me` should return the
    owner's name. If not linked, run `facebook-cli connect-url` and give the
    owner the connect link.
@@ -38,13 +44,13 @@ sold, and hand the owner only the decisions that need a human.
 
 ## Workflow
 
-### 1. Intake (`-l intake`)
+### 1. Intake
 Photos land in `photos/<item-id>/` (one item per folder; use a short slug).
-Create the bead: `bd create "Sell: <item>" -l channel:fbm -l intake` and note
-the photo paths in a comment. If the owner sent context (where it came from,
-known flaws), file it in `items/<item-id>/identify.md` later — don't lose it.
+Create `items/<item-id>/`, write `intake` to `status.txt`, and note the photo
+paths in `log.md`. If the owner sent context (where it came from, known
+flaws), file it in `items/<item-id>/identify.md` later — don't lose it.
 
-### 2. Identify (`-l identified`) — ask questions here
+### 2. Identify — ask questions here
 Examine the photos and identify the item as precisely as possible (brand,
 model, variant, what's included). Then **ask the owner** for what the photos
 can't settle — typically:
@@ -54,31 +60,33 @@ can't settle — typically:
 - anything that changes value (receipts, warranty, serial).
 
 Keep it to one short round of questions. Fill `items/<item-id>/identify.md`
-from `assets/templates/identify.md`. Don't proceed to comps until the
-identification is solid — a wrong identity means wrong comps.
+from `assets/templates/identify.md`, write `identified` to `status.txt`.
+Don't proceed to comps until the identification is solid — a wrong identity
+means wrong comps.
 
-### 3. Comps (`-l comps_done`)
+### 3. Comps
 FBM has **no sold-data API** — price from *active* listings, and say so.
 Run `bin/comps.py "<search terms>"` (wraps `facebook-cli marketplace search`
 with the owner's location/radius; obeys the CLI quirks in the Operating
 Rules). Fill `items/<item-id>/comps.md` from the template: n listings,
 price min/median/max, condition mix, and how your item compares. If comps are
-thin (<5), widen the query before widening the radius.
+thin (<5), widen the query before widening the radius. Write `comps_done` to
+`status.txt`.
 
-### 4. Decide (`-l decided`)
+### 4. Decide
 Recommend a price using `references/fbm-listing-craft.md` §Pricing: list
 ~10–15% above the walk-away price to leave haggle room, unless the owner
 wants it firm. Set delivery types (meetup / door pickup) and whether shipping
 is offered at all (default: local only). Record the decision and the
-walk-away floor in a bead comment.
+walk-away floor in `log.md`; write `decided` to `status.txt`.
 
-### 5. Draft (`-l drafted`)
+### 5. Draft
 Write `items/<item-id>/listing.md` from `assets/templates/listing.md`:
 title, price (CAD), description (grounded facts only), condition
 (owner-confirmed), category, photo list, location, delivery types. Run the
 pre-publish checklist in the template — all four Facebook publish-gate
 fields (photos, condition, category, location) must be present for it to go
-live on create.
+live on create. Write `drafted` to `status.txt`.
 
 ### 6. Review gate
 Present the draft exactly as it will appear (title, price, description,
@@ -86,7 +94,7 @@ condition, category, photos, delivery) plus the comp basis for the price.
 Publish only on explicit approval. Default is review; autopilot needs a
 standing instruction.
 
-### 7. Publish (`-l listed`)
+### 7. Publish
 After approval:
 ```sh
 facebook-cli marketplace listing create \
@@ -99,26 +107,26 @@ facebook-cli marketplace listing create \
 **Read the response `message` and report the true status** — `"Listing
 published successfully"` means live; `"Listing created as draft"` means a
 publish-gate field was missing (fix via `listing edit`, then `listing
-publish`). Record `listing_id` + `product_url` in a bead comment and move
-the bead to `-l listed`. Then check buyer-message readiness once:
+publish`). Record `listing_id` + `product_url` in `log.md` and write `listed`
+to `status.txt`. Then check buyer-message readiness once:
 `hatch_messenger_cli check` — if Messenger Companion isn't connected, offer
 the connect link; don't start monitoring unless asked.
 
-### 8. Monitor (`-l listed`, comments on the bead)
+### 8. Monitor
 - `facebook-cli marketplace my-listings --status active` — the inventory.
 - **Price drops:** if no serious inquiries in 7–14 days, propose a 5–10%
   cut (edit needs owner confirmation, like create).
 - **Stale listings:** FBM buries old listings; after ~3–4 weeks with no
   action, propose delete + re-create (fresh `creation_date`).
-- Log every check and change as a bead comment. Ping the owner only when a
+- Log every check and change in `log.md`. Ping the owner only when a
   decision is needed.
 
 ### 9. Inquiries & sold
 - **Report buyer inquiries; never reply without the owner's explicit say-so**
   on the exact message. (Standing rule — no exceptions.)
 - When the owner confirms the sale: they mark it **sold in the Facebook
-  app** (no CLI mark-sold exists), you move the bead `-l sold`, then `-l
-  complete` after handoff, and file any receipt in `receipts/`.
+  app** (no CLI mark-sold exists), you write `sold` to `status.txt`, then
+  `complete` after handoff, and file any receipt in `receipts/`.
 
 ## Auth & accounts
 
@@ -131,9 +139,10 @@ the connect link; don't start monitoring unless asked.
 ## Output contract (per item)
 
 - `items/<item-id>/identify.md`, `comps.md`, `listing.md`
-- one `beads` issue labeled `channel:fbm`, moved through
+- `status.txt` carried through
   `intake → identified → comps_done → decided → drafted → listed → sold → complete`
-- live listing URL recorded on the bead
+- `log.md` with every decision
+- live listing URL recorded in `log.md`
 
 ## Operating rules
 

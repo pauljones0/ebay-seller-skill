@@ -13,27 +13,17 @@ if [ ! -d .git ]; then
   git init -q
 fi
 
-if command -v bd >/dev/null 2>&1; then
-  bd init >/dev/null 2>&1 || true
-  echo "beads initialized."
-else
-  echo "NOTE: 'bd' (beads) not found. Install it, then run 'bd init' here:"
-  echo "  curl -fsSL https://raw.githubusercontent.com/steveyegge/beads/main/scripts/install.sh | bash"
-fi
-
 if [ ! -f README.md ]; then
   cat > README.md <<'EOF'
 # Sell My Stuff — eBay pipeline tracker
 
-Private repo. One bead per item carries it through the pipeline:
+Private repo. Each item's `items/<item-id>/status.txt` holds its pipeline stage:
 
 `intake → identified → comps_done → decided → drafted → listed → sold → shipped → complete`
 
 Per-stage artifacts live in `items/<item-id>/` (see the ebay-seller skill's
-`assets/templates/`). Lots are epic beads with member items as children.
-
-Agent loop: `bd ready --json` → do the stage's work → write artifacts →
-`bd update <id> --label <next-stage>` → `bd comment <id> "decision"` → `bd sync`.
+`assets/templates/`); every decision is logged in the item's `log.md`.
+Lots get `lots/<lot-id>/` with a `members.txt` of member item-ids.
 EOF
 fi
 
