@@ -79,7 +79,13 @@ Apply `references/pricing-strategy.md`:
 1. Free eBay Developers Program signup → Application Keys → create **Sandbox** and **Production** keysets (App ID, Cert ID, Dev ID). Set the env vars above.
 2. Run `bin/ebay.py auth-url`, open the URL as the seller, approve the scopes once, then `bin/ebay.py exchange --code <code>`. Tokens save to `~/.config/ebay-seller/tokens.json` (mode 600); **refresh tokens rotate on every refresh — the helper persists the newest automatically.**
 3. Prerequisites (one-time): ≥1 fulfillment, payment, and return policy + ≥1 inventory location — via `bin/ebay.py policies` (read) then Account API or Seller Hub (write).
-4. Photo upload: REST takes HTTPS `imageUrls[]` only — upload via legacy Trading API `UploadSiteHostedPictures` (→ eBay Picture Services) or self-host. Full detail: `references/ebay-api-notes.md`.
+4. Photo upload: REST takes HTTPS `imageUrls[]` only, BUT eBay's publish step
+   rejects third-party/self-hosted URLs with a misleading "fulfillment policy"
+   error (25007/err:216118) — verified 2026-10-06 with both muse.ai and
+   raw.githubusercontent.com URLs. Trading API `UploadSiteHostedPictures` also
+   fails ("corrupt image data" on every file). Working path: create the listing
+   shell via API if you like, but upload photos through the Seller Hub UI
+   (browser task). Full detail: `references/ebay-api-notes.md`.
 
 ## Output Contract
 

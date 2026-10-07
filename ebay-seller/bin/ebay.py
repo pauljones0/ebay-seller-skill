@@ -227,12 +227,36 @@ def cmd_fulfill(a):
     print(json.dumps(api("POST", f"/sell/fulfillment/v1/order/{a.order_id}/shipping_fulfillment", body), indent=2))
 
 
+def app_token():
+    """Application (client-credentials) token for public-data APIs.
+
+    The user token's sell.* scopes don't cover the Taxonomy API (403), but
+    category suggestions are public data — an app token works.
+    """
+    tok = token_request({
+        "grant_type": "client_credentials",
+        "scope": "https://api.ebay.com/oauth/api_scope",
+    })
+    return tok["access_token"]
+
+
 def cmd_suggest_category(a):
-    mkt = env("EBAY_MARKETPLACE", "EBAY_US")
-    tree = api("GET", f"/commerce/taxonomy/v1/category_tree/default",
-               params={"marketplace_id": mkt})["categoryTreeId"]
+    # NOTE: the "/category_tree/default" alias 404s with an app token; tree 0
+    # is the EBAY_US default category tree (verified 2026-10-06).
+    base = api_base()
+    headers = {"Authorization": "Bearer " + app_token()}
+    def get(path, params=None):
+        url = base + path
+        if params:
+            url += "?" + urllib.parse.urlencode(params)
+        req = urllib.request.Request(url, headers=headers)
+        try:
+            with urllib.request.urlopen(req, timeout=60) as r:
+                return json.load(r)
+        except urllib.error.HTTPError as e:
+            sys.exit(f"error: HTTP {e.code} on GET {path}\n{e.read().decode()[:2000]}")
     print(json.dumps(
-        api("GET", f"/commerce/taxonomy/v1/category_tree/{tree}/get_category_suggestions",
+        get("/commerce/taxonomy/v1/category_tree/0/get_category_suggestions",
             params={"q": a.query}), indent=2))
 
 

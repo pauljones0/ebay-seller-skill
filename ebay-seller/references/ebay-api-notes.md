@@ -54,7 +54,15 @@ Two different things:
 ## Photos
 
 - Requirements: ≥500px longest side (1600px recommended), ≤24 free/listing, ≤12MB, JPEG/PNG/GIF/TIFF/BMP/WEBP/HEIC. No text/borders/watermarks. Used items must show the actual item.
-- REST Inventory API takes **HTTPS `imageUrls[]` only — no binary upload**. Upload via legacy Trading API `UploadSiteHostedPictures` → eBay Picture Services URL, or self-host.
+- REST Inventory API takes **HTTPS `imageUrls[]` only — no binary upload**. BUT as of
+  2026-10-06, publish **rejects third-party/self-hosted URLs** with a misleading
+  "fulfillment policy" error (25007 / err:216118) — verified with both muse.ai
+  (blocked by its `Cross-Origin-Resource-Policy: same-origin` header) and
+  raw.githubusercontent.com URLs. Legacy Trading API `UploadSiteHostedPictures`
+  also fails ("corrupt image data", error 21916550) for every file tested,
+  including a tiny generated JPEG — the request format needs work. **Working
+  path: upload photos through the Seller Hub UI (browser task).** A public
+  GitHub repo (`pauljones0/listing-photos`) exists for photo staging.
 
 ## ToS boundaries (Feb 2026 User Agreement)
 
