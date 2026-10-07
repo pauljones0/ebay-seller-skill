@@ -15,7 +15,7 @@ listing drafting, publishing (after your approval), and sale tracking.
   each listing before it goes live, meet the buyer / ship the item.
 - **The agent does:** identify the item, research comps, recommend a price,
   draft the listing, publish it after approval, monitor it (price drops,
-  relists), track everything per-item in a private `beads` repo.
+  relists), track everything per-item in a private tracking repo.
 - **Never:** the agent won't message buyers on your behalf or publish
   without your say-so (review gate is on by default).
 
@@ -50,7 +50,7 @@ fbm-seller/
   and says so. eBay sold comps are the cross-check when FBM comps are thin.
 - Both skills keep per-item state in a private tracking repo (never in this
   public repo): photos, receipts, `identify.md` / `comps.md` / `listing.md`
-  per item, one `beads` issue per item.
+  per item, one `status.txt` + `log.md` per item.
 
 MIT licensed. Built from public API docs and first-hand usage, not from any
 paid product.
