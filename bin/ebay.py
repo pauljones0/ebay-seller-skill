@@ -39,9 +39,12 @@ SCOPES = [
     "https://api.ebay.com/oauth/api_scope/sell.account",
     "https://api.ebay.com/oauth/api_scope/sell.finances",
     "https://api.ebay.com/oauth/api_scope/sell.marketing",
-    # NOTE (2026-10-06): sell.negotiation is documented but eBay's authorize
-    # endpoint rejects it with invalid_scope for this keyset — omitted.
-    # Seller-initiated watcher offers need it; revisit per keyset.
+    # NOTE (2026-10-06): the documented sell.negotiation scope does not exist on
+    # real keysets — eBay's OAuth Scopes tab lists sell.offer ("View and manage
+    # offers and negotiations for your listings.") instead. That's the scope the
+    # Sell Negotiation API (find_eligible_items, send_offer_to_interested_buyers)
+    # actually requires.
+    "https://api.ebay.com/oauth/api_scope/sell.offer",
 ]
 
 HOSTS = {
@@ -162,7 +165,9 @@ def api(method, path, body=None, params=None):
         headers={"Authorization": "Bearer " + get_access_token(),
                  "Content-Type": "application/json",
                  "Content-Language": "en-US",
-                 "Accept": "application/json"},
+                 "Accept": "application/json",
+                 # Required by Negotiation/Taxonomy/Browse and harmless elsewhere.
+                 "X-EBAY-C-MARKETPLACE-ID": env("EBAY_MARKETPLACE", "EBAY_US")},
     )
     try:
         with urllib.request.urlopen(req) as r:
@@ -239,6 +244,21 @@ def cmd_policies(a):
             api("GET", f"/sell/account/v1/{kind}", params={"marketplace_id": mkt}), indent=2))
 
 
+def cmd_find_eligible(a):
+    # Sell Negotiation API — needs the sell.offer OAuth scope.
+    print(json.dumps(
+        api("GET", "/sell/negotiation/v1/find_eligible_items",
+            params={"limit": str(a.limit)}), indent=2))
+
+
+def cmd_send_offer(a):
+    # Body from JSON file: {"offers": [{"listingId": "...", "discountPercentage": "10",
+    #   "duration": {"value": 2, "unit": "DAY"}, "message": "..."}]}
+    body = json.loads(Path(a.json).read_text())
+    print(json.dumps(
+        api("POST", "/sell/negotiation/v1/send_offer_to_interested_buyers", body), indent=2))
+
+
 def main():
     p = argparse.ArgumentParser(description="eBay Sell API helper")
     sub = p.add_subparsers(dest="cmd", required=True)
@@ -258,6 +278,9 @@ def main():
     c.add_argument("--tracking", required=True); c.add_argument("--carrier", required=True,
         help="e.g. UPS, USPS, FEDEX"); c.add_argument("--line-items", nargs="*", default=[])
     c = sub.add_parser("suggest-category"); c.add_argument("--query", required=True)
+    c = sub.add_parser("find-eligible-items"); c.add_argument("--limit", type=int, default=20)
+    c = sub.add_parser("send-offer"); c.add_argument("--json", required=True,
+        help="CreateOffersRequest JSON file (see cmd_send_offer docstring)")
     sub.add_parser("policies")
 
     a = p.parse_args()
@@ -266,7 +289,8 @@ def main():
      "create-item": cmd_create_item, "create-offer": cmd_create_offer,
      "publish": cmd_publish, "offers": cmd_offers, "withdraw": cmd_withdraw,
      "orders": cmd_orders, "fulfill": cmd_fulfill,
-     "suggest-category": cmd_suggest_category, "policies": cmd_policies}[a.cmd](a)
+     "suggest-category": cmd_suggest_category, "policies": cmd_policies,
+     "find-eligible-items": cmd_find_eligible, "send-offer": cmd_send_offer}[a.cmd](a)
 
 
 if __name__ == "__main__":

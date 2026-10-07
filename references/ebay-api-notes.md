@@ -45,9 +45,11 @@ eBay's Logistics (label-buying) API is Limited Release — expect denial. Pirate
 - Terapeak Product Research: free in Seller Hub (avg sold, STR, trends) — **no API**, manual validation for high-value items.
 - `bin/comps.py`: SoldComps lookup → `comps-cache/`.
 
-## Best offers
+## Best offers / negotiation
 
-**No REST endpoint** for accept/decline/counter on buyer Best Offers (Negotiation API only sends seller-initiated offers *to watchers*). Handle in Seller Hub UI, or legacy Trading API `RespondToBestOffer`. Set native auto-accept/auto-decline thresholds at list time instead.
+Two different things:
+- **Buyer-initiated Best Offers** (accept/decline/counter): **no REST endpoint** — handle in Seller Hub UI (or legacy Trading API `RespondToBestOffer`). Set native auto-accept/auto-decline thresholds at list time instead.
+- **Seller-initiated offers to watchers** (`GET /sell/negotiation/v1/find_eligible_items`, `POST /sell/negotiation/v1/send_offer_to_interested_buyers`): real REST endpoints, but they need the **`sell.offer`** OAuth scope ("View and manage offers and negotiations for your listings."). Beware: eBay's docs name a `sell.negotiation` scope that does not exist on real keysets — requesting it fails the whole consent with `invalid_scope`. Check the keyset's OAuth Scopes tab for ground truth. `bin/ebay.py find-eligible-items` / `send-offer --json` wrap these calls.
 
 ## Photos
 

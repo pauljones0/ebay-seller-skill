@@ -70,7 +70,7 @@ Apply `references/pricing-strategy.md`:
 ## Tooling
 
 - `bin/fees.py` — net-proceeds calculator. `fees.py --price 300 --label 12 --ad-rate 0.02 [--store] [--shipping-charged 15] [--cogs 50]`
-- `bin/ebay.py` — eBay Sell API helper. `auth-url` → `exchange --code` (one-time consent) → `create-item --sku --json` → `create-offer --json` → `publish --offer-id`; also `offers`, `withdraw`, `orders --since`, `fulfill --order-id --tracking --carrier`, `suggest-category --query`, `policies`. Config via `EBAY_APP_ID/CERT_ID/DEV_ID/RUNAME`, `EBAY_ENV=sandbox|production`. Test in sandbox first.
+- `bin/ebay.py` — eBay Sell API helper. `auth-url` → `exchange --code` (one-time consent) → `create-item --sku --json` → `create-offer --json` → `publish --offer-id`; also `offers`, `withdraw`, `orders --since`, `fulfill --order-id --tracking --carrier`, `suggest-category --query`, `policies`, `find-eligible-items`, `send-offer --json`. Config via `EBAY_APP_ID/CERT_ID/DEV_ID/RUNAME`, `EBAY_ENV=sandbox|production`. Test in sandbox first. Note: the Negotiation API needs the `sell.offer` scope (eBay docs name a nonexistent `sell.negotiation` — don't use it).
 - `bin/comps.py` — Browse-API comps tracker. `track --query ... --out comps-cache/x.json`, later `check --cache comps-cache/x.json` → SOLD/ENDED_UNSOLD/ACTIVE + price summary.
 - `assets/repo-scaffold.sh` — new tracking repo scaffold.
 - `assets/templates/` — `identify.md`, `comps.md`, `listing.md`, `pnl.md`.
