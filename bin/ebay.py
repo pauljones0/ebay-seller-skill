@@ -39,7 +39,9 @@ SCOPES = [
     "https://api.ebay.com/oauth/api_scope/sell.account",
     "https://api.ebay.com/oauth/api_scope/sell.finances",
     "https://api.ebay.com/oauth/api_scope/sell.marketing",
-    "https://api.ebay.com/oauth/api_scope/sell.negotiation",
+    # NOTE (2026-10-06): sell.negotiation is documented but eBay's authorize
+    # endpoint rejects it with invalid_scope for this keyset — omitted.
+    # Seller-initiated watcher offers need it; revisit per keyset.
 ]
 
 HOSTS = {
@@ -121,6 +123,7 @@ def cmd_exchange(a):
         "code": a.code,
         "redirect_uri": env("EBAY_RUNAME", required=True),
     })
+    tok["_issued_at"] = datetime.now(timezone.utc).timestamp()
     save_tokens(tok)
     print("tokens saved (access + refresh).")
 
@@ -138,7 +141,8 @@ def get_access_token():
     new = token_request({
         "grant_type": "refresh_token",
         "refresh_token": toks["refresh_token"],
-        "scope": " ".join(SCOPES),
+        # NOTE: do NOT send `scope` here — eBay's token endpoint rejects the
+        # refresh grant with invalid_scope when scope is included (2026-10-06).
     })
     new["_issued_at"] = now
     # eBay rotates refresh tokens — persist whatever came back.

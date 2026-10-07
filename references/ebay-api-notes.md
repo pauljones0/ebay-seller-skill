@@ -6,9 +6,9 @@ Researched Oct 2026 from eBay developer docs + live verification. eBay retires A
 
 1. Free signup at the eBay Developers Program → Application Keys → create keysets for **Sandbox** and **Production**. Each keyset: App ID (client_id), Cert ID (client_secret), Dev ID.
 2. **User tokens** (required for all Sell APIs) come from the **authorization-code consent flow**: seller opens a consent URL built with the app's RuName + scopes, approves once, agent exchanges the code for tokens.
-3. Scopes (prefix `https://api.ebay.com/oauth/api_scope/`): `sell.inventory sell.fulfillment sell.account sell.finances sell.marketing sell.negotiation`.
+3. Scopes (prefix `https://api.ebay.com/oauth/api_scope/`): `sell.inventory sell.fulfillment sell.account sell.finances sell.marketing`. (`sell.negotiation` is documented but eBay's authorize endpoint returned `invalid_scope` for it on this keyset — verified 2026-10-06; seller-initiated watcher offers will need revisiting.)
 4. Token endpoints: Sandbox `https://api.sandbox.ebay.com/identity/v1/oauth2/token`, Production `https://api.ebay.com/identity/v1/oauth2/token`.
-5. **Refresh tokens rotate on every refresh — always persist the newest one.** Store in `~/.config/ebay-seller/tokens.json`, never in the repo.
+5. **Refresh tokens rotate on every refresh — always persist the newest one.** Do NOT send a `scope` parameter on the refresh grant — eBay rejects it with `invalid_scope`; omit it. Store in `~/.config/ebay-seller/tokens.json`, never in the repo.
 6. Rate limits: ~1,000 req/day (app token), ~10,000/day (user token), ~50,000/day (refresh grant).
 
 `bin/ebay.py` implements: `auth-url`, `exchange`, `refresh`.
@@ -20,7 +20,7 @@ Three dependent steps:
 2. `POST /sell/inventory/v1/offer` — createOffer (price, categoryId, listing format/duration, fulfillment/payment/return **policy IDs**, merchantLocationKey). Draft only.
 3. `POST /sell/inventory/v1/offer/{offerId}/publish` — returns `listingId`. **Point of no return — human confirms before this call.**
 
-Prerequisites the API can't bootstrap: ≥1 fulfillment policy, ≥1 payment policy, ≥1 return policy, ≥1 inventory location. Create once via Account API (`/sell/account/v1/*_policy`) or in Seller Hub.
+Prerequisites the API can't bootstrap: ≥1 fulfillment policy, ≥1 payment policy, ≥1 return policy, ≥1 inventory location. Create once via Account API (`/sell/account/v1/*_policy`) or in Seller Hub. (Note 2026-10-06: an account without Business Policies opted in gets `20403 "User is not eligible for Business Policy"` — enable Business Policies in Seller Hub first, or create the policies via the API.)
 
 `bin/ebay.py`: `create-item`, `create-offer`, `publish`, `offers`, `suggest-category` (Taxonomy API: category suggestions + item aspects per leaf).
 
